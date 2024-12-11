@@ -42,13 +42,8 @@ def reiniciar():
     nodos.clear()
     conexiones.clear()
     letras_nodos.clear()
-    nodo_inicio = (RADIO_NODO + 10, RADIO_NODO + 10)
-    nodo_fin = (ANCHO - RADIO_NODO - 10, ALTO - RADIO_NODO - 10)
-    nodos.extend([nodo_inicio, nodo_fin])
-    letras_nodos[nodo_inicio] = 'I'
-    letras_nodos[nodo_fin] = 'F'
-    conexiones[nodo_inicio] = []
-    conexiones[nodo_fin] = []
+    nodo_inicio = None
+    nodo_fin = None
     camino = []
 
 
@@ -106,7 +101,6 @@ def agregar_conexion(n1, n2):
 
     color_linea = COLOR_LINEA_NEGATIVA if peso < 0 else COLOR_LINEA
     conexiones[n1].append((n2, peso))
-    conexiones[n2].append((n1, peso))
     dibujar()
 
 
@@ -115,12 +109,11 @@ def bellman_ford_animado(nodo_inicio, nodo_fin):
     distancias[nodo_inicio] = 0
     predecesores = {nodo: None for nodo in nodos}
 
-    # Relajación de las aristas (V-1 veces)
     for i in range(len(nodos) - 1):
         hubo_actualizacion = False
-        for u in nodos:
-            for v, peso in conexiones.get(u, []):
-                if distancias[u] + peso < distancias[v]:
+        for u in conexiones:
+            for v, peso in conexiones[u]:
+                if distancias[u] != float('inf') and distancias[u] + peso < distancias[v]:
                     distancias[v] = distancias[u] + peso
                     predecesores[v] = u
                     hubo_actualizacion = True
@@ -133,9 +126,9 @@ def bellman_ford_animado(nodo_inicio, nodo_fin):
             break  # Si no hubo cambios, terminamos antes
 
     # Comprobación de ciclos negativos
-    for u in nodos:
-        for v, peso in conexiones.get(u, []):
-            if distancias[u] + peso < distancias[v]:
+    for u in conexiones:
+        for v, peso in conexiones[u]:
+            if distancias[u] != float('inf') and distancias[u] + peso < distancias[v]:
                 mostrar_alerta(
                     "¡Ciclo negativo detectado! No se puede calcular el camino.")
                 return None
@@ -228,7 +221,17 @@ while ejecutando:
         elif evento.type == pygame.KEYDOWN:
             if evento.key == pygame.K_ESCAPE:
                 reiniciar()
-            elif evento.key == pygame.K_SPACE:
+            elif evento.key == pygame.K_s:  # Seleccionar nodo inicial
+                for nodo in nodos:
+                    if distancia(nodo, pygame.mouse.get_pos()) < RADIO_NODO + 5:
+                        nodo_inicio = nodo
+                        break
+            elif evento.key == pygame.K_f:  # Seleccionar nodo final
+                for nodo in nodos:
+                    if distancia(nodo, pygame.mouse.get_pos()) < RADIO_NODO + 5:
+                        nodo_fin = nodo
+                        break
+            elif evento.key == pygame.K_SPACE and nodo_inicio and nodo_fin:
                 camino = bellman_ford_animado(nodo_inicio, nodo_fin)
 
 pygame.quit()
